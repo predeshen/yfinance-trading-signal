@@ -73,20 +73,19 @@ class DatabaseConfig(BaseSettings):
 class AppConfig(BaseSettings):
     """Main application configuration"""
     timezone: str = Field("Africa/Johannesburg", alias="APP_TIMEZONE")
+    telegram: TelegramConfig = Field(default_factory=TelegramConfig)
+    smtp: SmtpConfig = Field(default_factory=SmtpConfig)
+    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
+    scanner: ScannerConfig = Field(default_factory=ScannerConfig)
     
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Load nested configs
-        self.telegram = TelegramConfig()
-        self.smtp = SmtpConfig()
-        self.database = DatabaseConfig()
-        
         # Load scanner config with symbols
-        scanner_base = ScannerConfig()
         symbols = ScannerConfig.load_symbols_from_env()
-        self.scanner = ScannerConfig(symbols=symbols, **scanner_base.model_dump())
+        if symbols:
+            self.scanner = ScannerConfig(symbols=symbols, **self.scanner.model_dump())
     
     def validate_all(self) -> None:
         """Validate all configuration sections"""
