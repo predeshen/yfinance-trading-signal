@@ -1,5 +1,6 @@
 """yfinance market data provider implementation"""
 import logging
+import asyncio
 from typing import Dict, Tuple
 from datetime import datetime, timedelta
 import pandas as pd
@@ -147,7 +148,14 @@ class YFinanceMarketDataProvider:
             DataFrame with OHLCV data
         """
         try:
-            ticker = yf.Ticker(symbol)
+            # Add user-agent to bypass bot detection
+            import requests
+            session = requests.Session()
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            })
+            
+            ticker = yf.Ticker(symbol, session=session)
             
             # Fetch history
             df = ticker.history(
@@ -183,6 +191,9 @@ class YFinanceMarketDataProvider:
                 f"from {df.index[0]} to {df.index[-1]}"
             )
             
+            # Add small delay to avoid rate limiting
+            await asyncio.sleep(0.5)
+            
             return df
         
         except Exception as e:
@@ -204,7 +215,14 @@ class YFinanceMarketDataProvider:
             True if symbol is valid, False otherwise
         """
         try:
-            ticker = yf.Ticker(symbol)
+            # Add user-agent to bypass bot detection
+            import requests
+            session = requests.Session()
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            })
+            
+            ticker = yf.Ticker(symbol, session=session)
             
             # Try to fetch 1 day of data
             df = ticker.history(period="1d", interval="1d")

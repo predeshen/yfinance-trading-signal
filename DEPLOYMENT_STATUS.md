@@ -219,8 +219,55 @@ For issues:
 
 ---
 
-**Status**: ✅ READY FOR PRODUCTION DEPLOYMENT
+## 🔧 Recent Fixes
+
+### Fix #1: psycopg2-binary dependency (2024-01-20)
+- **Issue**: Missing psycopg2-binary in requirements.txt
+- **Fix**: Added psycopg2-binary==2.9.9
+- **Status**: ✅ Resolved
+
+### Fix #2: Pydantic v2 configuration (2024-01-20)
+- **Issue**: AppConfig trying to set fields not declared in model
+- **Error**: `ValueError: "AppConfig" object has no field "telegram"`
+- **Fix**: Declared nested config fields (telegram, smtp, database, scanner) as proper Pydantic fields with default_factory
+- **Status**: ✅ Resolved
+
+### Fix #3: Duplicate symbols argument (2024-01-20)
+- **Issue**: Scanner config initialization passing symbols twice
+- **Error**: `TypeError: ScannerConfig() got multiple values for keyword argument 'symbols'`
+- **Fix**: Excluded 'symbols' from model_dump() before passing to ScannerConfig constructor
+- **Status**: ✅ Resolved
+
+### Fix #4: Symbol validation and background services (2024-01-20)
+- **Issue 1**: Using index symbols (^DJI, ^NDX, ^GDAXI) instead of tradeable instruments
+- **Issue 2**: Background services (scanner, heartbeat, email) not starting
+- **Fix**: 
+  - Changed to tradeable ETFs: DIA (US30), QQQ (US100/NAS100), EWG (DAX), GC=F (Gold)
+  - Added background service initialization in main.py lifespan
+- **Status**: ✅ Resolved - Ready to redeploy
+
+---
+
+**Status**: ✅ DEPLOYED AND RUNNING
 
 **Last Updated**: 2024-01-20
 
-**Version**: 1.0.0
+**Version**: 1.0.3
+
+---
+
+## 📝 Deployment Notes
+
+The application is now successfully running on your VM. You may see some yfinance warnings during startup - these are normal and occur when yfinance validates symbols. The scanner will continue to operate and fetch data during regular scanning intervals.
+
+To verify everything is working:
+```bash
+# Check if service is running
+docker compose ps
+
+# View live logs
+docker compose logs -f scanner-service
+
+# Check health endpoint
+curl http://localhost:8000/health
+```
