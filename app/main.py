@@ -71,7 +71,37 @@ async def lifespan(app: FastAPI):
         app.state.config = config
         app.state.data_provider = data_provider
         
+        # Start background services
+        from app.services.scanner_service import ScannerService
+        from app.services.heartbeat_service import HeartbeatService
+        from app.services.summary_email_service import SummaryEmailService
+        
+        scanner_service = ScannerService(config, data_provider)
+        heartbeat_service = HeartbeatService(config)
+        email_service = SummaryEmailService(config)
+        
+        # Create background tasks
+        scanner_task = asyncio.create_task(scanner_service.run())
+        heartbeat_task = asyncio.create_task(heartbeat_service.run())
+        email_task = asyncio.create_task(email_service.run())
+        
+        logger.info("✓ Background services started")
+        logger.info(f"  - Scanner: every {config.scanner.scan_interval_seconds}s")
+        logger.info(f"  - Heartbeat: every {config.scanner.heartbeat_interval_minutes}m")
+        logger.info(f"  - Email Summary: every {config.scanner.email_summary_interval_hours}h")
+        
         yield
+        
+        # Shutdown: cancel background tasks
+        logger.info("Stopping background services...")
+        scanner_task.cancel()
+        heartbeat_task.cancel()
+        email_task.cancel()
+        
+        try:
+            await asyncio.gather(scanner_task, heartbeat_task, email_task, return_exceptions=True)
+        except asyncio.CancelledError:
+            pass
         
     except Exception as e:
         logger.error(f"Failed to start application: {e}", exc_info=True)
