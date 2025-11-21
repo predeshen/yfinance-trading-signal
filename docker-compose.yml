@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  scanner-postgres:
+    image: postgres:16
+    container_name: scanner-postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - scanner-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  scanner-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scanner-service
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      scanner-postgres:
+        condition: service_healthy
+    networks:
+      - scanner-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  scanner-pgadmin:
+    image: dpage/pgadmin4
+    container_name: scanner-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    networks:
+      - scanner-network
+    depends_on:
+      - scanner-postgres
+    restart: unless-stopped
+
+networks:
+  scanner-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
