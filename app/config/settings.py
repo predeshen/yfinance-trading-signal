@@ -85,7 +85,9 @@ class AppConfig(BaseSettings):
         # Load scanner config with symbols
         symbols = ScannerConfig.load_symbols_from_env()
         if symbols:
-            self.scanner = ScannerConfig(symbols=symbols, **self.scanner.model_dump())
+            # Get current scanner config values, excluding symbols to avoid duplicate
+            scanner_data = self.scanner.model_dump(exclude={'symbols'})
+            self.scanner = ScannerConfig(symbols=symbols, **scanner_data)
     
     def validate_all(self) -> None:
         """Validate all configuration sections"""
