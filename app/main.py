@@ -50,18 +50,12 @@ async def lifespan(app: FastAPI):
         run_migrations()
         logger.info("✓ Database migrations completed")
         
-        # Validate symbols
+        # Initialize data provider (skip validation to avoid startup failures)
         from app.data.yfinance_provider import YFinanceMarketDataProvider
         data_provider = YFinanceMarketDataProvider()
+        logger.info("✓ Data provider initialized")
         
-        logger.info("Validating symbols...")
-        for alias, yf_symbol in config.scanner.symbols.items():
-            is_valid = await data_provider.validate_symbol(yf_symbol)
-            if is_valid:
-                logger.info(f"  ✓ {alias} ({yf_symbol})")
-            else:
-                logger.error(f"  ✗ {alias} ({yf_symbol}) - INVALID")
-        
+        logger.info(f"Configured symbols: {', '.join(config.scanner.symbols.keys())}")
         logger.info("=" * 60)
         logger.info("Trading Scanner Service Started Successfully")
         logger.info(f"Health check available at: http://0.0.0.0:8000/health")
