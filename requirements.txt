@@ -7,7 +7,7 @@ pydantic-settings==2.1.0
 # Database
 sqlalchemy==2.0.23
 alembic==1.13.0
-# psycopg2-binary==2.9.9  # Skip on Windows, use in Docker only
+psycopg2-binary==2.9.9
 
 # Data & Analysis
 yfinance==0.2.32
