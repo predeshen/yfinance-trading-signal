@@ -65,12 +65,26 @@ async def lifespan(app: FastAPI):
         app.state.config = config
         app.state.data_provider = data_provider
         
-        # TODO: Background services need to be refactored to work with the current architecture
-        # For now, the application will start without them
-        logger.info("⚠ Background services disabled - requires refactoring")
-        logger.info("  Application is running in API-only mode")
+        # Start simple scanner service
+        from app.services.simple_scanner import SimpleScanner
+        
+        scanner = SimpleScanner(config, data_provider)
+        scanner_task = asyncio.create_task(scanner.run())
+        
+        logger.info("✓ Simple scanner started")
+        logger.info(f"  - Scanning every {config.scanner.scan_interval_seconds}s")
+        logger.info(f"  - Symbols: {', '.join(config.scanner.symbols.keys())}")
         
         yield
+        
+        # Shutdown
+        logger.info("Stopping scanner...")
+        scanner.stop()
+        scanner_task.cancel()
+        try:
+            await scanner_task
+        except asyncio.CancelledError:
+            pass
         
     except Exception as e:
         logger.error(f"Failed to start application: {e}", exc_info=True)
